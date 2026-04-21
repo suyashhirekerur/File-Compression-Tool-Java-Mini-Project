@@ -17,7 +17,10 @@ FileCompressionTool/
     ├── service/
     │   ├── ZipCompressor.java            ← ZIP implementation
     │   ├── GzipCompressor.java           ← GZIP implementation
-    │   └── CompressionService.java       ← Orchestrator (Strategy pattern)
+    │   ├── DocumentCompressor.java       ← Document files (PDF, DOCX, PPT, XLS)
+    │   ├── ImageCompressor.java          ← Image files (JPG, JPEG, PNG)
+    │   ├── CompressionService.java       ← Orchestrator (Strategy pattern)
+    │   └── FileTypeDetector.java         ← Smart file type detection
     └── ui/
         └── MainWindow.java               ← Swing GUI (tabbed interface)
 ```
@@ -26,15 +29,17 @@ FileCompressionTool/
 
 ## OOP Concepts Demonstrated
 
-| Concept           | Where                                              |
-|-------------------|----------------------------------------------------|
-| Interface         | ICompressor                                        |
-| Polymorphism      | ZipCompressor & GzipCompressor implement ICompressor |
-| Encapsulation     | Model classes with private fields + getters/setters |
-| Inheritance       | Both compressors implement same interface          |
-| Strategy Pattern  | CompressionService.setCompressor() swaps at runtime |
-| Exception Handling | try-catch with IOException in all service methods  |
-| Multithreading    | SwingWorker keeps GUI responsive during compression |
+| Concept           | Where                                                                              |
+|-------------------|------------------------------------------------------------------------------------|
+| Interface         | ICompressor                                                                         |
+| Polymorphism      | All compressor classes (Zip, GZIP, Document, Image) implement ICompressor           |
+| Encapsulation     | Model classes with private fields + getters/setters                                |
+| Inheritance       | All compressors implement same interface                                            |
+| Strategy Pattern  | CompressionService.setCompressor() swaps at runtime                                |
+| Factory Pattern   | FileTypeDetector.getRecommendedCompressor() suggests appropriate compressor           |
+| Exception Handling | try-catch with IOException in all service methods                                  |
+| Multithreading    | SwingWorker keeps GUI responsive during compression                                 |
+| File Type Detection| FileTypeDetector class with smart validation and auto-detection                     |
 
 ---
 
@@ -57,9 +62,25 @@ FileCompressionTool/
 
 ## Features
 
+### Core Compression
 - ZIP compression and extraction
 - GZIP compression and extraction
+- Document compression (PDF, DOCX, PPT, PPTX, XLS, XLSX)
+- Image compression (JPG, JPEG, PNG) with optimization support
+
+### Smart Features
 - Auto-detect algorithm from file extension on decompress
+- Smart file type detection and validation
+- Automatic compressor selection based on file type
+- File type validation with user-friendly error messages
+
+### User Experience
 - Background processing using SwingWorker (UI stays responsive)
 - Compression ratio and time statistics
 - Tabbed GUI (Compress / Decompress / About)
+- Enhanced file browser with type indicators
+
+### Supported Formats
+- **Documents**: PDF, DOCX, PPT, PPTX, XLS, XLSX
+- **Images**: JPG, JPEG, PNG (with optimization)
+- **Archives**: ZIP, GZIP, DOC.ZIP, IMG.ZIP

@@ -42,10 +42,25 @@ public class MainWindow extends JFrame {
         // Algorithm selector
         JPanel topRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
         topRow.add(new JLabel("Algorithm:"));
-        algorithmBox = new JComboBox<>(new String[]{"ZIP", "GZIP"});
+        algorithmBox = new JComboBox<>(new String[]{"ZIP", "GZIP", "Documents (PDF/DOCX/PPT/XLS)", "Images (JPG/PNG)"});
         algorithmBox.addActionListener(e -> {
             String algo = (String) algorithmBox.getSelectedItem();
-            service.setCompressor("ZIP".equals(algo) ? new ZipCompressor() : new GzipCompressor());
+            switch (algo) {
+                case "ZIP":
+                    service.setCompressor(new ZipCompressor());
+                    break;
+                case "GZIP":
+                    service.setCompressor(new GzipCompressor());
+                    break;
+                case "Documents (PDF/DOCX/PPT/XLS)":
+                    service.setCompressor(new DocumentCompressor());
+                    break;
+                case "Images (JPG/PNG)":
+                    service.setCompressor(new ImageCompressor());
+                    break;
+                default:
+                    service.setCompressor(new ZipCompressor());
+            }
         });
         topRow.add(algorithmBox);
 
@@ -61,8 +76,22 @@ public class MainWindow extends JFrame {
             JFileChooser fc = new JFileChooser();
             if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
                 selectedSourcePath = fc.getSelectedFile().getAbsolutePath();
-                sourceLabel.setText("Source: " + fc.getSelectedFile().getName());
+                String fileName = fc.getSelectedFile().getName();
+                
+                // Validate file type
+                if (!FileTypeDetector.isFileSupported(selectedSourcePath)) {
+                    JOptionPane.showMessageDialog(this, 
+                        "Unsupported file type!\n\nSupported formats:\n" + FileTypeDetector.getSupportedFormats(),
+                        "File Type Error", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                
+                sourceLabel.setText("Source: " + fileName + " (" + FileTypeDetector.getFileType(selectedSourcePath) + ")");
                 sourceLabel.setForeground(new Color(0, 100, 0));
+                
+                // Auto-select appropriate compressor
+                String recommended = FileTypeDetector.getRecommendedCompressor(selectedSourcePath);
+                algorithmBox.setSelectedItem(recommended);
             }
         });
 
@@ -173,17 +202,31 @@ public class MainWindow extends JFrame {
         final String[] archivePath = {""};
         final String[] outputPath  = {""};
 
-        JButton pickArchive = new JButton("Browse Archive (.zip / .gz)");
+        JButton pickArchive = new JButton("Browse Archive (.zip / .gz / .doc.zip / .img.zip)");
         pickArchive.addActionListener(e -> {
             JFileChooser fc = new JFileChooser();
             if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
                 archivePath[0] = fc.getSelectedFile().getAbsolutePath();
-                srcLbl.setText("Archive: " + fc.getSelectedFile().getName());
+                String fileName = fc.getSelectedFile().getName();
+                
+                // Validate archive type
+                if (!FileTypeDetector.isArchiveFile(archivePath[0])) {
+                    JOptionPane.showMessageDialog(this, 
+                        "Not a valid archive file!\n\nSupported archive formats:\n" + FileTypeDetector.getSupportedFormats(),
+                        "Archive Type Error", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                
+                srcLbl.setText("Archive: " + fileName + " (" + FileTypeDetector.getFileType(archivePath[0]) + ")");
                 srcLbl.setForeground(new Color(0, 100, 0));
 
                 // Auto-detect algorithm from extension
                 if (archivePath[0].endsWith(".gz")) {
                     service.setCompressor(new GzipCompressor());
+                } else if (archivePath[0].endsWith(".doc.zip")) {
+                    service.setCompressor(new DocumentCompressor());
+                } else if (archivePath[0].endsWith(".img.zip")) {
+                    service.setCompressor(new ImageCompressor());
                 } else {
                     service.setCompressor(new ZipCompressor());
                 }
@@ -242,9 +285,12 @@ public class MainWindow extends JFrame {
             "Features:\n" +
             "  • ZIP compression & extraction\n" +
             "  • GZIP compression & extraction\n" +
+            "  • Document compression (PDF, DOCX, PPT, PPTX, XLS, XLSX)\n" +
+            "  • Image compression (JPG, JPEG, PNG)\n" +
             "  • Background processing (SwingWorker)\n" +
-            "  • Compression ratio statistics\n\n" +
-            "Built with: Java Swing, java.util.zip\n" +
+            "  • Compression ratio statistics\n" +
+            "  • Smart file type detection\n\n" +
+            "Built with: Java Swing, java.util.zip, javax.imageio\n" +
             "IDE: NetBeans / IntelliJ IDEA"
         );
         about.setEditable(false);
